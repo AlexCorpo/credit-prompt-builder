@@ -365,31 +365,36 @@ const DEF_CRIT = {
 };
 
 const RUBRICS_DEF = [
-  { name:'Business Profile',     icon:'🏢', weight:25, sel:true,
+  { name:'Business Profile',     icon:'🏢', weight:25, sel:true,  useSubs:true,
+    criteria:{...DEF_CRIT},
     subs:[ {name:'Competitive Position', weight:40, criteria:{...DEF_CRIT}},
            {name:'Revenue Diversification', weight:30, criteria:{...DEF_CRIT}},
            {name:'Pricing Power', weight:30, criteria:{...DEF_CRIT}} ] },
-  { name:'Industry & Country Risk', icon:'🌍', weight:10, sel:true,
+  { name:'Industry & Country Risk', icon:'🌍', weight:10, sel:true, useSubs:true,
+    criteria:{...DEF_CRIT},
     subs:[ {name:'Sector Cyclicality', weight:50, criteria:{...DEF_CRIT}},
            {name:'Regulatory Environment', weight:50, criteria:{...DEF_CRIT}} ] },
-  { name:'Management & Strategy', icon:'👥', weight:10, sel:true,
+  { name:'Management & Strategy', icon:'👥', weight:10, sel:true, useSubs:true,
+    criteria:{...DEF_CRIT},
     subs:[ {name:'Track Record & Execution', weight:50, criteria:{...DEF_CRIT}},
            {name:'Strategic Clarity', weight:50, criteria:{...DEF_CRIT}} ] },
-  { name:'Financial Policy',     icon:'📊', weight:15, sel:true,
+  { name:'Financial Policy',     icon:'📊', weight:15, sel:true,  useSubs:true,
+    criteria:{...DEF_CRIT},
     subs:[ {name:'Leverage Target', weight:50, criteria:{...DEF_CRIT}},
            {name:'Shareholder Returns Policy', weight:50, criteria:{...DEF_CRIT}} ] },
-  { name:'Leverage & Coverage',  icon:'⚖️', weight:20, sel:true,
+  { name:'Leverage & Coverage',  icon:'⚖️', weight:20, sel:true,  useSubs:true,
+    criteria:{...DEF_CRIT},
     subs:[ {name:'Net Debt / EBITDA', weight:40, criteria:{...DEF_CRIT}},
            {name:'Interest Coverage (EBITDA/Interest)', weight:35, criteria:{...DEF_CRIT}},
            {name:'FFO / Net Debt', weight:25, criteria:{...DEF_CRIT}} ] },
-  { name:'Liquidity',            icon:'💧', weight:15, sel:true,
+  { name:'Liquidity',            icon:'💧', weight:15, sel:true,  useSubs:true,
+    criteria:{...DEF_CRIT},
     subs:[ {name:'Liquidity Sources vs Uses', weight:50, criteria:{...DEF_CRIT}},
            {name:'Debt Maturity Profile', weight:30, criteria:{...DEF_CRIT}},
            {name:'Capital Market Access', weight:20, criteria:{...DEF_CRIT}} ] },
-  { name:'ESG',                  icon:'🌱', weight:5,  sel:false,
-    subs:[ {name:'Environmental Risk', weight:40, criteria:{...DEF_CRIT}},
-           {name:'Social Risk', weight:30, criteria:{...DEF_CRIT}},
-           {name:'Governance Quality', weight:30, criteria:{...DEF_CRIT}} ] },
+  { name:'ESG',                  icon:'🌱', weight:5,  sel:false, useSubs:false,
+    criteria:{...DEF_CRIT},
+    subs:[] },
 ];
 
 function deepClone(o) { return JSON.parse(JSON.stringify(o)); }
@@ -464,7 +469,7 @@ function updW(i,v){
 }
 function doAddCat(){
   const name=document.getElementById('mAddCatName').value.trim(); if(!name)return;
-  rubrics.push({name,icon:'📌',weight:10,sel:true,subs:[{name:'Default Sub-factor',weight:100,criteria:{...DEF_CRIT}}]});
+  rubrics.push({name,icon:'📌',weight:10,sel:true,useSubs:false,criteria:{...DEF_CRIT},subs:[]});
   closeM('mAddCat'); document.getElementById('mAddCatName').value=''; renderTab2();
 }
 
@@ -474,34 +479,59 @@ function renderTab3(){
   if(!sel.length)return;
   if(!activeSFCat||!sel.find(r=>r.name===activeSFCat)) activeSFCat=sel[0].name;
   document.getElementById('sfNav').innerHTML=sel.map(r=>`
-    <div class="rnav-item ${r.name===activeSFCat?'active':''}" onclick="setSFCat('${esc(r.name)}')">${r.icon} ${r.name}</div>`).join('');
+    <div class="rnav-item ${r.name===activeSFCat?'active':''}" onclick="setSFCat('${esc(r.name)}')">${r.icon} ${r.name}${r.useSubs?'':' <span style="font-size:9px;opacity:.6">direct</span>'}</div>`).join('');
   renderSFList();
 }
 function setSFCat(name){ activeSFCat=name; renderTab3(); }
 function renderSFList(){
   const r=rubrics.find(x=>x.name===activeSFCat); if(!r)return;
-  document.getElementById('sfTotLabel').textContent=r.name;
+  const ci=rubrics.indexOf(r);
+  // Toggle button
+  const toggleHTML=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:.75rem;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm)">
+    <span style="font-size:12px;color:var(--text2);flex:1">Use sub-factors for <b style="color:var(--text)">${esc(r.name)}</b></span>
+    <button class="btn btn-sm ${r.useSubs?'btn-primary':'btn-ghost'}" onclick="toggleUseSubs(${ci})">
+      ${r.useSubs?'✅ Enabled — click to disable':'☐ Disabled — click to enable'}
+    </button>
+  </div>`;
+
+  if(!r.useSubs){
+    document.getElementById('sfList').innerHTML=toggleHTML+`<div style="font-size:12px;color:var(--text3);padding:12px;border:1px dashed var(--border);border-radius:var(--radius-sm);text-align:center">No sub-factors — criteria are defined directly on the category in the next tab.</div>`;
+    document.getElementById('sfTotLabel').textContent=r.name;
+    document.getElementById('sfTotBadge').textContent='—'; document.getElementById('sfTotBadge').className='badge b-blue';
+    document.getElementById('btnAddSF').style.display='none';
+    return;
+  }
+
+  document.getElementById('btnAddSF').style.display='';
   const tot=r.subs.reduce((s,sf)=>s+sf.weight,0);
   const sb=document.getElementById('sfTotBadge'); sb.textContent=tot+'%'; sb.className='badge '+(tot===100?'b-green':'b-amber');
-  document.getElementById('sfList').innerHTML=r.subs.map((sf,si)=>{
-    const catI=rubrics.indexOf(r); const isOpen=openSF[activeSFCat+'_'+si];
+  document.getElementById('sfTotLabel').textContent=r.name;
+  document.getElementById('sfList').innerHTML=toggleHTML+r.subs.map((sf,si)=>{
+    const isOpen=openSF[activeSFCat+'_'+si];
     return`<div class="sf-item">
       <div class="sf-header" onclick="toggleSF('${esc(activeSFCat)}',${si})">
         <span class="sf-name">${esc(sf.name)}</span>
         <span class="sf-wt">${sf.weight}%</span>
         <span class="sf-expand" id="sfchev_${si}" style="transform:${isOpen?'rotate(180deg)':''}">▼</span>
-        <button class="sf-del" onclick="delSF(${catI},${si},event)" title="Remove">✕</button>
+        <button class="sf-del" onclick="delSF(${ci},${si},event)" title="Remove">✕</button>
       </div>
       <div class="sf-body ${isOpen?'open':''}" id="sfbody_${si}">
-      <div class="sf-config">
+        <div class="sf-config">
           <label>Weight in ${esc(r.name)}:</label>
-          <input type="range" min="0" max="100" step="5" value="${sf.weight}" oninput="updSFW(${catI},${si},+this.value)" id="sfslider_${catI}_${si}"/>
-          <input type="number" min="0" max="100" step="5" value="${sf.weight}" style="width:44px;font-size:11px;font-family:var(--mono);background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--accent);padding:2px 4px;text-align:center" oninput="updSFW(${catI},${si},+this.value)" id="sfnum_${catI}_${si}"/>
+          <input type="range" min="0" max="100" step="5" value="${sf.weight}" oninput="updSFW(${ci},${si},+this.value)" id="sfslider_${ci}_${si}"/>
+          <input type="number" min="0" max="100" step="5" value="${sf.weight}" style="width:44px;font-size:11px;font-family:var(--mono);background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--accent);padding:2px 4px;text-align:center" oninput="updSFW(${ci},${si},+this.value)" id="sfnum_${ci}_${si}"/>
           <span style="font-size:11px;color:var(--text3)">%</span>
         </div>
       </div>
     </div>`;
   }).join('');
+}
+function toggleUseSubs(ci){
+  rubrics[ci].useSubs=!rubrics[ci].useSubs;
+  if(rubrics[ci].useSubs && rubrics[ci].subs.length===0){
+    rubrics[ci].subs=[{name:'Sub-factor 1',weight:100,criteria:{...DEF_CRIT}}];
+  }
+  renderSFList(); renderTab3();
 }
 function toggleSF(cat,si){
   const key=cat+'_'+si; openSF[key]=!openSF[key];
@@ -516,7 +546,7 @@ function updSFW(ci,si,v){
   const r=rubrics[ci]; const tot=r.subs.reduce((s,sf)=>s+sf.weight,0);
   const sb=document.getElementById('sfTotBadge'); if(sb){sb.textContent=tot+'%'; sb.className='badge '+(tot===100?'b-green':'b-amber');}
 }
-function delSF(ci,si,e){ e.stopPropagation(); if(rubrics[ci].subs.length<=1){toast('At least one sub-factor required.');return;} rubrics[ci].subs.splice(si,1); renderSFList(); }
+function delSF(ci,si,e){ e.stopPropagation(); rubrics[ci].subs.splice(si,1); if(rubrics[ci].subs.length===0) rubrics[ci].useSubs=false; renderSFList(); renderTab3(); }
 let _pendingSFCat=null;
 function openAddSF(){ _pendingSFCat=activeSFCat; document.getElementById('mSFName').value=''; document.getElementById('mSFWeight').value=20; openM('mAddSF'); }
 function doAddSF(){
@@ -530,51 +560,71 @@ function doAddSF(){
 function renderTab4(){
   const sel=rubrics.filter(r=>r.sel);
   if(!sel.length)return;
-  // Build flat list of [cat, sf, sfIdx]
-  const flat=[];
-  sel.forEach(r=>r.subs.forEach((sf,si)=>flat.push({cat:r,sf,si})));
-  if(!flat.length)return;
-  if(!activeCritCat||!sel.find(r=>r.name===activeCritCat)){activeCritCat=sel[0].name;activeCritSF=sel[0].subs[0].name;}
+  if(!activeCritCat||!sel.find(r=>r.name===activeCritCat)){
+    activeCritCat=sel[0].name;
+    activeCritSF=sel[0].useSubs&&sel[0].subs.length?sel[0].subs[0].name:null;
+  }
   document.getElementById('critNav').innerHTML=sel.map(r=>`
-    <div class="rnav-item ${r.name===activeCritCat?'active':''}" onclick="setCritCat('${esc(r.name)}')">${r.icon} ${r.name}</div>`).join('');
+    <div class="rnav-item ${r.name===activeCritCat?'active':''}" onclick="setCritCat('${esc(r.name)}')">${r.icon} ${r.name}${r.useSubs?'':' <span style="font-size:9px;opacity:.6">direct</span>'}</div>`).join('');
   renderCritSFTabs();
 }
 function setCritCat(name){
   activeCritCat=name;
-  const r=rubrics.find(x=>x.name===name); if(r&&r.subs.length) activeCritSF=r.subs[0].name;
+  const r=rubrics.find(x=>x.name===name);
+  activeCritSF=(r&&r.useSubs&&r.subs.length)?r.subs[0].name:null;
   renderTab4();
 }
 function renderCritSFTabs(){
   const r=rubrics.find(x=>x.name===activeCritCat); if(!r)return;
-  if(!activeCritSF||!r.subs.find(s=>s.name===activeCritSF)) activeCritSF=r.subs[0].name;
-  // inject sf tabs below category nav
-  const sfTabsEl = document.getElementById('critNav');
-  // sub-tabs: render as second row using a separate element
-  let sfTabsHTML='<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:6px;">';
+  const existing=document.getElementById('critSFRow'); if(existing)existing.remove();
+
+  if(!r.useSubs){
+    // Direct mode — no sub-factor tabs, edit category criteria directly
+    document.getElementById('critSFLabel').textContent=r.name;
+    document.getElementById('critSFWt').textContent='(direct — no sub-factors)';
+    renderCritTable();
+    return;
+  }
+
+  // Sub-factor tabs
+  if(!activeCritSF||!r.subs.find(s=>s.name===activeCritSF)) activeCritSF=r.subs[0]?.name||null;
+  let sfTabsHTML='<div id="critSFRow" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:6px;">';
   r.subs.forEach(sf=>{
     sfTabsHTML+=`<div class="rnav-item" style="font-size:11px;padding:4px 9px;${sf.name===activeCritSF?'background:rgba(59,130,246,0.12);border-color:rgba(59,130,246,0.3);color:var(--accent)':''}" onclick="setCritSF('${esc(sf.name)}')">${esc(sf.name)} <span style="font-family:var(--mono);font-size:9px;color:var(--text3)">${sf.weight}%</span></div>`;
   });
   sfTabsHTML+='</div>';
-  const existing=document.getElementById('critSFRow'); if(existing)existing.remove();
-  const div=document.createElement('div'); div.id='critSFRow'; div.innerHTML=sfTabsHTML;
-  sfTabsEl.after(div);
-  // label
+  const div=document.createElement('div'); div.innerHTML=sfTabsHTML;
+  document.getElementById('critNav').after(div.firstChild);
+
   const sf=r.subs.find(s=>s.name===activeCritSF);
-  document.getElementById('critSFLabel').textContent=activeCritSF;
+  document.getElementById('critSFLabel').textContent=activeCritSF||'';
   document.getElementById('critSFWt').textContent=sf?'('+sf.weight+'% of '+r.name+')':'';
   renderCritTable();
 }
 function setCritSF(name){ activeCritSF=name; renderCritSFTabs(); }
 function renderCritTable(){
   const r=rubrics.find(x=>x.name===activeCritCat); if(!r)return;
+  let ci=rubrics.indexOf(r);
+
+  if(!r.useSubs){
+    // Edit criteria directly on the category
+    document.getElementById('critTable').innerHTML=LEVELS.map((lvl,i)=>`
+      <div class="r-row">
+        <div class="r-lbl ${LCSS[i]}">${lvl}</div>
+        <textarea class="r-desc" rows="2" onchange="updCatCrit(${ci},'${lvl}',this.value)">${esc(r.criteria[lvl]||'')}</textarea>
+      </div>`).join('');
+    return;
+  }
+
   const sf=r.subs.find(s=>s.name===activeCritSF); if(!sf)return;
-  const ci=rubrics.indexOf(r); const si=r.subs.indexOf(sf);
+  const si=r.subs.indexOf(sf);
   document.getElementById('critTable').innerHTML=LEVELS.map((lvl,i)=>`
     <div class="r-row">
       <div class="r-lbl ${LCSS[i]}">${lvl}</div>
       <textarea class="r-desc" rows="2" onchange="updCrit(${ci},${si},'${lvl}',this.value)">${esc(sf.criteria[lvl]||'')}</textarea>
     </div>`).join('');
 }
+function updCatCrit(ci,lvl,val){ rubrics[ci].criteria[lvl]=val; }
 function updCrit(ci,si,lvl,val){ rubrics[ci].subs[si].criteria[lvl]=val; }
 
 // ── Prompt builder ─────────────────────────────────────────────
@@ -621,7 +671,112 @@ function buildPrompt(cat, sf){
   return p;
 }
 
-// ── Synthesis prompt builder ───────────────────────────────────
+// ── Direct category prompt (no sub-factors) ───────────────────
+function buildDirectPrompt(cat){
+  const top=cat.criteria['Aaa']||''; const mid=cat.criteria['Baa']||''; const low=cat.criteria['C']||'';
+  let focus=`This category assesses ${cat.name} of the issuer. Weight in composite rating: ${cat.weight}%. `;
+  if(top) focus+=`At the top of the scale (Aaa): ${top.replace(/\.?$/,'.')} `;
+  if(mid) focus+=`At the median (Baa): ${mid.replace(/\.?$/,'.')} `;
+  if(low) focus+=`At the bottom (C): ${low.replace(/\.?$/,'.')} `;
+  focus+=`Apply the full criteria grid below to identify the level that best matches the observable evidence.`;
+
+  let p='';
+  p+=`You are a senior credit analyst specializing in qualitative credit analysis following Moody's methodology.\n\n`;
+  p+=`## Category: ${cat.name}\n`;
+  p+=`Weight in composite rating: ${cat.weight}%\n\n`;
+  p+=`---\n\n`;
+  p+=`## Analytical Focus\n${focus}\n\n`;
+  p+=`---\n\n`;
+  p+=`## Rating Scale & Criteria\n\n`;
+  p+=`Select the level that best matches the observable evidence for the issuer under review.\n\n`;
+  LEVELS.forEach(lvl=>{
+    p+=`**${lvl}** — ${cat.criteria[lvl]||'(not defined)'}\n\n`;
+  });
+  p+=`---\n\n`;
+  p+=`## Instructions\n\n`;
+  p+=`1. Review all available information on the issuer (provided documents, public data, market intelligence).\n`;
+  p+=`2. Identify the factual evidence that maps to the criteria above.\n`;
+  p+=`3. Assign a rating (Aaa, Aa, A, Baa, Ba, B, Caa, Ca, or C).\n`;
+  p+=`4. Justify your assessment in 3 to 5 sentences, citing quantitative data points where available.\n`;
+  p+=`5. Flag areas of uncertainty or missing information that limit your conviction.\n\n`;
+  p+=`---\n\n`;
+  p+=`## Expected Output Format\n\n`;
+  p+=`**Category: ${cat.name}**\n\n`;
+  p+=`- **Rating assigned:** [Aaa / Aa / A / Baa / Ba / B / Caa / Ca / C]\n`;
+  p+=`- **Rationale:** [3–5 sentences with data points]\n`;
+  p+=`- **Supporting factors:** [bullet list]\n`;
+  p+=`- **Risk factors / concerns:** [bullet list]\n`;
+  p+=`- **Conviction level:** [High / Moderate / Low] — [brief explanation if not High]\n`;
+  return p;
+}
+
+// ── Tab 5: Prompts ────────────────────────────────────────────
+function renderTab5(){
+  openPC={};
+  const sel=rubrics.filter(r=>r.sel);
+  let html='';
+
+  sel.forEach(cat=>{
+    if(!cat.useSubs){
+      // ── Direct category prompt ──
+      const key='direct_'+cat.name;
+      html+=`<div class="pc">
+        <div class="pc-head" onclick="togglePC('${esc(key)}')">
+          <span class="pc-rubric">${esc(cat.icon)} ${esc(cat.name)}</span>
+          <span class="pc-name">Direct prompt</span>
+          <span class="pc-wt">${cat.weight}% of composite</span>
+          <span class="pc-chev" id="pcchev_${esc(key)}">▼</span>
+        </div>
+        <div class="pc-body" id="pcbody_${esc(key)}">
+          <pre class="prompt-pre">${escPre(buildDirectPrompt(cat))}</pre>
+          <div class="pc-actions">
+            <button class="btn btn-primary btn-sm" onclick="copyDirect('${esc(cat.name)}',event)">📋 Copy</button>
+          </div>
+        </div>
+      </div>`;
+    } else {
+      // ── Synthesis prompt (category header) ──
+      const synthKey='synth_'+cat.name;
+      html+=`<div class="pc" style="border-color:rgba(59,130,246,0.35)">
+        <div class="pc-head" onclick="togglePC('${esc(synthKey)}')" style="background:rgba(59,130,246,0.08)">
+          <span class="pc-rubric" style="color:var(--accent)">${esc(cat.icon)} ${esc(cat.name)}</span>
+          <span class="pc-name" style="color:var(--accent)">⊕ Synthesis prompt</span>
+          <span class="pc-wt">${cat.weight}% of composite</span>
+          <span class="badge b-blue" style="font-size:9px">SYNTHESIS</span>
+          <span class="pc-chev" id="pcchev_${esc(synthKey)}">▼</span>
+        </div>
+        <div class="pc-body" id="pcbody_${esc(synthKey)}">
+          <pre class="prompt-pre">${escPre(buildSynthesisPrompt(cat))}</pre>
+          <div class="pc-actions">
+            <button class="btn btn-primary btn-sm" onclick="copySynth('${esc(cat.name)}',event)">📋 Copy synthesis prompt</button>
+          </div>
+        </div>
+      </div>`;
+
+      // ── Sub-factor prompts ──
+      cat.subs.forEach((sf,si)=>{
+        const key=cat.name+'_'+si;
+        html+=`<div class="pc" style="margin-left:16px">
+          <div class="pc-head" onclick="togglePC('${esc(key)}')">
+            <span class="pc-rubric">${esc(cat.name)}</span>
+            <span class="pc-name">${esc(sf.name)}</span>
+            <span class="pc-wt">${sf.weight}% of ${cat.weight}%</span>
+            <span class="pc-chev" id="pcchev_${esc(key)}">▼</span>
+          </div>
+          <div class="pc-body" id="pcbody_${esc(key)}">
+            <pre class="prompt-pre">${escPre(buildPrompt(cat,sf))}</pre>
+            <div class="pc-actions">
+              <button class="btn btn-primary btn-sm" onclick="copyOne('${esc(cat.name)}','${si}',event)">📋 Copy</button>
+            </div>
+          </div>
+        </div>`;
+      });
+    }
+    html+=`<div style="height:8px"></div>`;
+  });
+
+  document.getElementById('promptCards').innerHTML=html||'<div class="empty">No active categories.</div>';
+}
 function buildSynthesisPrompt(cat){
   let p='';
   p+=`You are a senior credit analyst specializing in qualitative credit analysis following Moody's methodology.\n\n`;
@@ -722,6 +877,11 @@ function togglePC(key){
   document.getElementById('pcbody_'+key).classList.toggle('open',openPC[key]);
   document.getElementById('pcchev_'+key).style.transform=openPC[key]?'rotate(180deg)':'';
 }
+function copyDirect(catName,e){
+  e.stopPropagation();
+  const cat=rubrics.find(r=>r.name===catName); if(!cat)return;
+  navigator.clipboard.writeText(buildDirectPrompt(cat)).then(()=>toast('📋 Copied: '+cat.name));
+}
 function copySynth(catName,e){
   e.stopPropagation();
   const cat=rubrics.find(r=>r.name===catName); if(!cat)return;
@@ -737,10 +897,12 @@ function copyAll(){
   const sel=rubrics.filter(r=>r.sel);
   const parts=[]; let n=0;
   sel.forEach(cat=>{
-    // sub-factor prompts first
-    cat.subs.forEach(sf=>{ n++; parts.push('='.repeat(60)+'\nPROMPT '+n+' — '+cat.name.toUpperCase()+' / '+sf.name.toUpperCase()+'\n'+'='.repeat(60)+'\n\n'+buildPrompt(cat,sf)); });
-    // then synthesis
-    n++; parts.push('='.repeat(60)+'\nSYNTHESIS — '+cat.name.toUpperCase()+'\n'+'='.repeat(60)+'\n\n'+buildSynthesisPrompt(cat));
+    if(!cat.useSubs){
+      n++; parts.push('='.repeat(60)+'\nPROMPT '+n+' — '+cat.name.toUpperCase()+'\n'+'='.repeat(60)+'\n\n'+buildDirectPrompt(cat));
+    } else {
+      cat.subs.forEach(sf=>{ n++; parts.push('='.repeat(60)+'\nPROMPT '+n+' — '+cat.name.toUpperCase()+' / '+sf.name.toUpperCase()+'\n'+'='.repeat(60)+'\n\n'+buildPrompt(cat,sf)); });
+      n++; parts.push('='.repeat(60)+'\nSYNTHESIS — '+cat.name.toUpperCase()+'\n'+'='.repeat(60)+'\n\n'+buildSynthesisPrompt(cat));
+    }
   });
   navigator.clipboard.writeText(parts.join('\n\n')).then(()=>toast('📋 Copied all ('+n+' prompts)'));
 }
