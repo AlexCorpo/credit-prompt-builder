@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Credit Prompt Builder</title>
+<title>Credit Prompt Builder v2</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Sora:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -245,8 +245,8 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); font
   <div class="header">
     <div class="header-row">
       <div>
-        <h1>Credit Prompt Builder</h1>
-        <p>Build structured qualitative credit analysis prompts — one per sub-factor</p>
+        <h1>Credit Prompt Builder <span style="font-size:11px;font-weight:400;color:var(--text3);font-family:var(--mono);margin-left:6px">v2</span></h1>
+        <p>Build structured qualitative credit analysis prompts — one per sub-factor + synthesis per category</p>
       </div>
       <button class="btn btn-ghost" onclick="openM('mSave')">💾 Save methodology</button>
     </div>
@@ -394,19 +394,13 @@ const RUBRICS_DEF = [
 
 function deepClone(o) { return JSON.parse(JSON.stringify(o)); }
 let rubrics = deepClone(RUBRICS_DEF);
-let activeSFCat = null;  // name of category active in tab3
+let activeSFCat = null;
 let activeCritCat = null;
 let activeCritSF = null;
 let openSF = {};
 let openPC = {};
 let pendingLoadKey = null;
 let pendingDelKey = null;
-
-// ── Storage ──────────────────────────────────────────────────
-function lsSet(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); return true; }catch(e){ return false; } }
-function lsGet(k){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):null; }catch(e){ return null; } }
-function lsDel(k){ try{ localStorage.removeItem(k); }catch(e){} }
-function lsKeys(prefix){ const out=[]; try{ for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(k&&k.startsWith(prefix))out.push(k); } }catch(e){} return out; }
 
 // ── Toast ─────────────────────────────────────────────────────
 let _toastTO;
@@ -436,36 +430,6 @@ function goTab(n){
   if(n===5) renderTab5();
 }
 
-// ── Library ───────────────────────────────────────────────────
-function loadLib(){
-  const keys = lsKeys('cpb_meth_');
-  const methList = document.getElementById('methList');
-  if(!keys.length){ methList.innerHTML='<div class="empty">No saved methodologies yet.<br>Configure yours and hit Save.</div>'; return; }
-  const items = keys.map(k=>lsGet(k)).filter(Boolean);
-  if(!items.length){ methList.innerHTML='<div class="empty">No valid entries found.</div>'; return; }
-  methList.innerHTML = items.map(m=>`
-    <div class="meth-item">
-      <div style="flex:1">
-        <div class="meth-name">${esc(m.name)}</div>
-        <div class="meth-meta">${m.description?esc(m.description)+' · ':''}<b>${m.rubrics.filter(r=>r.sel).length}</b> categories · ${countSFs(m.rubrics)} sub-factors · ${m.savedAt||''}</div>
-      </div>
-      <div style="display:flex;gap:6px">
-        <button class="btn btn-ghost btn-sm" onclick="askLoad('${esc(m.storageKey)}','${esc(m.name)}')">Load</button>
-        <button class="btn btn-danger btn-sm" onclick="askDel('${esc(m.storageKey)}','${esc(m.name)}')">Delete</button>
-      </div>
-    </div>`).join('');
-}
-function countSFs(rubs){ return rubs.filter(r=>r.sel).reduce((s,r)=>s+(r.subs?r.subs.length:0),0); }
-function askLoad(key,name){ pendingLoadKey=key; document.getElementById('mLoadMsg').textContent='Load "'+name+'"? Current workspace will be replaced.'; openM('mLoad'); }
-function doLoad(){ closeM('mLoad'); const m=lsGet(pendingLoadKey); if(!m){toast('❌ Could not load.');return;} rubrics=deepClone(m.rubrics); activeSFCat=null; activeCritCat=null; activeCritSF=null; toast('✅ Loaded: '+m.name); goTab(2); }
-function askDel(key,name){ pendingDelKey=key; document.getElementById('mDelMsg').textContent='Delete "'+name+'" permanently?'; openM('mDel'); }
-function doDel(){ closeM('mDel'); lsDel(pendingDelKey); toast('🗑 Deleted.'); loadLib(); }
-function doSave(){
-  const name=document.getElementById('mSaveName').value.trim(); if(!name){toast('Enter a name.');return;}
-  const key='cpb_meth_'+Date.now();
-  const payload={ name, description:document.getElementById('mSaveDesc').value.trim(), rubrics:deepClone(rubrics), savedAt:new Date().toLocaleDateString('en-GB'), storageKey:key };
-  lsSet(key,payload); closeM('mSave'); toast('✅ Saved: '+name); loadLib();
-}
 function resetWS(){ rubrics=deepClone(RUBRICS_DEF); activeSFCat=null; activeCritCat=null; activeCritSF=null; openSF={}; openPC={}; toast('Workspace reset.'); renderTab2(); }
 
 // ── Tab 2: Categories ─────────────────────────────────────────
@@ -486,11 +450,15 @@ function renderWeights(){
     const gi=rubrics.indexOf(r);
     return`<div class="w-row"><span class="w-name">${r.icon} ${r.name}</span>
       <input type="range" class="w-range" min="0" max="100" step="5" value="${r.weight}" oninput="updW(${gi},+this.value)"/>
-      <span class="w-val" id="wv${gi}">${r.weight}%</span></div>`;
+      <input type="number" min="0" max="100" step="5" value="${r.weight}" style="width:48px;font-size:11px;font-family:var(--mono);background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--accent);padding:2px 4px;text-align:center" oninput="updW(${gi},+this.value)" id="wnum${gi}"/>
+      <span style="font-size:11px;color:var(--text3)">%</span></div>`;
   }).join('');
 }
 function updW(i,v){
-  rubrics[i].weight=v; document.getElementById('wv'+i).textContent=v+'%';
+  v=Math.max(0,Math.min(100,+v||0));
+  rubrics[i].weight=v;
+  const ni=document.getElementById('wnum'+i); if(ni)ni.value=v;
+  const si=document.querySelector(`input[type=range][oninput="updW(${i},+this.value)"]`); if(si)si.value=v;
   const sel=rubrics.filter(r=>r.sel); const tot=sel.reduce((s,r)=>s+r.weight,0);
   const tb=document.getElementById('totBadge'); tb.textContent=tot+'%'; tb.className='badge '+(tot===100?'b-green':'b-amber');
 }
@@ -525,10 +493,11 @@ function renderSFList(){
         <button class="sf-del" onclick="delSF(${catI},${si},event)" title="Remove">✕</button>
       </div>
       <div class="sf-body ${isOpen?'open':''}" id="sfbody_${si}">
-        <div class="sf-config">
+      <div class="sf-config">
           <label>Weight in ${esc(r.name)}:</label>
-          <input type="range" min="1" max="100" step="5" value="${sf.weight}" oninput="updSFW(${catI},${si},+this.value)"/>
-          <span class="sf-wval" id="sfwv_${catI}_${si}">${sf.weight}%</span>
+          <input type="range" min="0" max="100" step="5" value="${sf.weight}" oninput="updSFW(${catI},${si},+this.value)" id="sfslider_${catI}_${si}"/>
+          <input type="number" min="0" max="100" step="5" value="${sf.weight}" style="width:44px;font-size:11px;font-family:var(--mono);background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--accent);padding:2px 4px;text-align:center" oninput="updSFW(${catI},${si},+this.value)" id="sfnum_${catI}_${si}"/>
+          <span style="font-size:11px;color:var(--text3)">%</span>
         </div>
       </div>
     </div>`;
@@ -540,10 +509,12 @@ function toggleSF(cat,si){
   document.getElementById('sfchev_'+si).style.transform=openSF[key]?'rotate(180deg)':'';
 }
 function updSFW(ci,si,v){
+  v=Math.max(0,Math.min(100,+v||0));
   rubrics[ci].subs[si].weight=v;
-  document.getElementById('sfwv_'+ci+'_'+si).textContent=v+'%';
+  const sl=document.getElementById('sfslider_'+ci+'_'+si); if(sl)sl.value=v;
+  const ni=document.getElementById('sfnum_'+ci+'_'+si); if(ni)ni.value=v;
   const r=rubrics[ci]; const tot=r.subs.reduce((s,sf)=>s+sf.weight,0);
-  const sb=document.getElementById('sfTotBadge'); sb.textContent=tot+'%'; sb.className='badge '+(tot===100?'b-green':'b-amber');
+  const sb=document.getElementById('sfTotBadge'); if(sb){sb.textContent=tot+'%'; sb.className='badge '+(tot===100?'b-green':'b-amber');}
 }
 function delSF(ci,si,e){ e.stopPropagation(); if(rubrics[ci].subs.length<=1){toast('At least one sub-factor required.');return;} rubrics[ci].subs.splice(si,1); renderSFList(); }
 let _pendingSFCat=null;
@@ -650,15 +621,82 @@ function buildPrompt(cat, sf){
   return p;
 }
 
+// ── Synthesis prompt builder ───────────────────────────────────
+function buildSynthesisPrompt(cat){
+  let p='';
+  p+=`You are a senior credit analyst specializing in qualitative credit analysis following Moody's methodology.\n\n`;
+  p+=`## Category Synthesis: ${cat.name}\n`;
+  p+=`Weight in composite rating: ${cat.weight}%\n\n`;
+  p+=`---\n\n`;
+  p+=`## Context\n`;
+  p+=`You have already completed the sub-factor analysis for the **${cat.name}** category. `;
+  p+=`Below are the LLM-generated outputs for each sub-factor. Your task is to synthesize these into a single category-level rating and opinion.\n\n`;
+  p+=`### Sub-factors included in this category:\n`;
+  cat.subs.forEach(sf=>{
+    p+=`- **${sf.name}** (${sf.weight}% weight within ${cat.name})\n`;
+  });
+  p+=`\n---\n\n`;
+  p+=`## Sub-factor Analysis Results\n\n`;
+  p+=`*[Paste the LLM outputs from each sub-factor analysis below. One block per sub-factor.]*\n\n`;
+  cat.subs.forEach(sf=>{
+    p+=`### ${sf.name} (${sf.weight}%)\n`;
+    p+=`[Paste the output of the "${sf.name}" sub-factor prompt here]\n\n`;
+  });
+  p+=`---\n\n`;
+  p+=`## Synthesis Instructions\n\n`;
+  p+=`1. Review each sub-factor rating and rationale above.\n`;
+  p+=`2. Compute the implied weighted average rating for the **${cat.name}** category, using the sub-factor weights above.\n`;
+  p+=`3. Assess whether any single sub-factor warrants a notching adjustment (positive or negative) to the mechanical average.\n`;
+  p+=`4. Assign a final category rating (Aaa, Aa, A, Baa, Ba, B, Caa, Ca, or C).\n`;
+  p+=`5. Write a synthesis opinion of 4–6 sentences integrating the key themes across sub-factors.\n`;
+  p+=`6. Identify the dominant driver (the sub-factor with the most influence on the final opinion).\n\n`;
+  p+=`---\n\n`;
+  p+=`## Expected Output Format\n\n`;
+  p+=`**Category: ${cat.name}**\n\n`;
+  p+=`| Sub-factor | Weight | Rating assigned | Key point |\n`;
+  p+=`|---|---|---|---|\n`;
+  cat.subs.forEach(sf=>{
+    p+=`| ${sf.name} | ${sf.weight}% | [rating] | [one-line summary] |\n`;
+  });
+  p+=`\n`;
+  p+=`- **Weighted average (mechanical):** [computed level]\n`;
+  p+=`- **Notching adjustment:** [None / +1 / -1] — [reason if adjusted]\n`;
+  p+=`- **Final category rating:** [Aaa / Aa / A / Baa / Ba / B / Caa / Ca / C]\n`;
+  p+=`- **Synthesis opinion:** [4–6 sentences integrating sub-factor themes]\n`;
+  p+=`- **Dominant driver:** [sub-factor name + brief explanation]\n`;
+  p+=`- **Category conviction level:** [High / Moderate / Low]\n`;
+  return p;
+}
+
 // ── Tab 5: Prompts ────────────────────────────────────────────
 function renderTab5(){
   openPC={};
   const sel=rubrics.filter(r=>r.sel);
   let html='';
+
   sel.forEach(cat=>{
+    // ── Synthesis prompt (header for the category) ──
+    const synthKey='synth_'+cat.name;
+    html+=`<div class="pc" style="border-color:rgba(59,130,246,0.35)">
+      <div class="pc-head" onclick="togglePC('${esc(synthKey)}')" style="background:rgba(59,130,246,0.08)">
+        <span class="pc-rubric" style="color:var(--accent)">${esc(cat.name)}</span>
+        <span class="pc-name" style="color:var(--accent)">⊕ Synthesis prompt</span>
+        <span class="pc-wt">${cat.weight}% of composite</span>
+        <span class="badge b-blue" style="font-size:9px">SYNTHESIS</span>
+        <span class="pc-chev" id="pcchev_${esc(synthKey)}">▼</span>
+      </div>
+      <div class="pc-body" id="pcbody_${esc(synthKey)}">
+        <pre class="prompt-pre">${escPre(buildSynthesisPrompt(cat))}</pre>
+        <div class="pc-actions">
+          <button class="btn btn-primary btn-sm" onclick="copySynth('${esc(cat.name)}',event)">📋 Copy synthesis prompt</button>
+        </div>
+      </div>
+    </div>`;
+
+    // ── Sub-factor prompts ──
     cat.subs.forEach((sf,si)=>{
       const key=cat.name+'_'+si;
-      html+=`<div class="pc">
+      html+=`<div class="pc" style="margin-left:16px;border-color:var(--border)">
         <div class="pc-head" onclick="togglePC('${esc(key)}')">
           <span class="pc-rubric">${esc(cat.name)}</span>
           <span class="pc-name">${esc(sf.name)}</span>
@@ -673,13 +711,21 @@ function renderTab5(){
         </div>
       </div>`;
     });
+
+    html+=`<div style="height:8px"></div>`;
   });
+
   document.getElementById('promptCards').innerHTML=html||'<div class="empty">No active categories.</div>';
 }
 function togglePC(key){
   openPC[key]=!openPC[key];
   document.getElementById('pcbody_'+key).classList.toggle('open',openPC[key]);
   document.getElementById('pcchev_'+key).style.transform=openPC[key]?'rotate(180deg)':'';
+}
+function copySynth(catName,e){
+  e.stopPropagation();
+  const cat=rubrics.find(r=>r.name===catName); if(!cat)return;
+  navigator.clipboard.writeText(buildSynthesisPrompt(cat)).then(()=>toast('📋 Synthesis prompt copied: '+cat.name));
 }
 function copyOne(catName,si,e){
   e.stopPropagation();
@@ -690,7 +736,12 @@ function copyOne(catName,si,e){
 function copyAll(){
   const sel=rubrics.filter(r=>r.sel);
   const parts=[]; let n=0;
-  sel.forEach(cat=>cat.subs.forEach(sf=>{ n++; parts.push('='.repeat(60)+'\nPROMPT '+n+' — '+cat.name.toUpperCase()+' / '+sf.name.toUpperCase()+'\n'+'='.repeat(60)+'\n\n'+buildPrompt(cat,sf)); }));
+  sel.forEach(cat=>{
+    // sub-factor prompts first
+    cat.subs.forEach(sf=>{ n++; parts.push('='.repeat(60)+'\nPROMPT '+n+' — '+cat.name.toUpperCase()+' / '+sf.name.toUpperCase()+'\n'+'='.repeat(60)+'\n\n'+buildPrompt(cat,sf)); });
+    // then synthesis
+    n++; parts.push('='.repeat(60)+'\nSYNTHESIS — '+cat.name.toUpperCase()+'\n'+'='.repeat(60)+'\n\n'+buildSynthesisPrompt(cat));
+  });
   navigator.clipboard.writeText(parts.join('\n\n')).then(()=>toast('📋 Copied all ('+n+' prompts)'));
 }
 function exportJSON(){
@@ -700,6 +751,87 @@ function exportJSON(){
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a'); a.href=url; a.download='credit_methodology.json'; a.click(); URL.revokeObjectURL(url);
   toast('⬇ JSON exported');
+}
+
+// ── Supabase config ───────────────────────────────────────────
+const SB_URL = 'https://zbysombwxrvlvfnesuaz.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpieXNvbWJ3eHJ2bHZmbmVzdWF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5NjcxNjIsImV4cCI6MjA5NTU0MzE2Mn0.Tc-dz6K0ezojEXNAtZVgB8I7zpuJ3OS2pn5omH1Z8Sc';
+const SB_HEADERS = { 'Content-Type': 'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY };
+
+async function sbFetch(path, opts={}){
+  const res = await fetch(SB_URL + '/rest/v1/' + path, { headers: SB_HEADERS, ...opts });
+  if(!res.ok){ const e=await res.text(); throw new Error(e); }
+  const txt = await res.text();
+  return txt ? JSON.parse(txt) : null;
+}
+
+// ── Library (Supabase) ────────────────────────────────────────
+async function loadLib(){
+  const el = document.getElementById('methList');
+  el.innerHTML = '<div class="empty">Loading…</div>';
+  try {
+    const rows = await sbFetch('methodologies?select=id,name,description,created_at&order=created_at.desc');
+    if(!rows || !rows.length){ el.innerHTML='<div class="empty">No saved methodologies yet.<br>Configure yours and hit Save.</div>'; return; }
+    el.innerHTML = rows.map(m=>`
+      <div class="meth-item">
+        <div style="flex:1">
+          <div class="meth-name">${esc(m.name)}</div>
+          <div class="meth-meta">${m.description?esc(m.description)+' · ':''} Saved ${new Date(m.created_at).toLocaleDateString('en-GB')}</div>
+        </div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-ghost btn-sm" onclick="askLoad('${esc(m.id)}','${esc(m.name)}')">Load</button>
+          <button class="btn btn-danger btn-sm" onclick="askDel('${esc(m.id)}','${esc(m.name)}')">Delete</button>
+        </div>
+      </div>`).join('');
+  } catch(e){ el.innerHTML='<div class="empty" style="color:var(--caa)">⚠ Could not reach database.<br><small>'+esc(e.message)+'</small></div>'; }
+}
+
+async function askLoad(id, name){
+  pendingLoadKey = id;
+  document.getElementById('mLoadMsg').textContent = 'Load "'+name+'"? Current workspace will be replaced.';
+  openM('mLoad');
+}
+async function doLoad(){
+  closeM('mLoad');
+  try {
+    const rows = await sbFetch('methodologies?id=eq.'+pendingLoadKey+'&select=data,name');
+    if(!rows||!rows.length){toast('❌ Could not load.');return;}
+    rubrics = deepClone(rows[0].data);
+    activeSFCat=null; activeCritCat=null; activeCritSF=null;
+    toast('✅ Loaded: '+rows[0].name);
+    goTab(2);
+  } catch(e){ toast('❌ '+e.message); }
+}
+
+function askDel(id, name){
+  pendingDelKey = id;
+  document.getElementById('mDelMsg').textContent = 'Delete "'+name+'" for everyone?';
+  openM('mDel');
+}
+async function doDel(){
+  closeM('mDel');
+  try {
+    await sbFetch('methodologies?id=eq.'+pendingDelKey, { method:'DELETE' });
+    toast('🗑 Deleted.');
+    loadLib();
+  } catch(e){ toast('❌ '+e.message); }
+}
+
+async function doSave(){
+  const name = document.getElementById('mSaveName').value.trim();
+  if(!name){ toast('Enter a name.'); return; }
+  const btn = document.getElementById('btnSaveOk');
+  btn.disabled=true; btn.textContent='Saving…';
+  try {
+    await sbFetch('methodologies', {
+      method: 'POST',
+      body: JSON.stringify({ name, description: document.getElementById('mSaveDesc').value.trim(), data: rubrics })
+    });
+    closeM('mSave');
+    toast('✅ Saved & shared: '+name);
+    loadLib();
+  } catch(e){ toast('❌ '+e.message); }
+  finally { btn.disabled=false; btn.textContent='Save'; }
 }
 
 // Init
