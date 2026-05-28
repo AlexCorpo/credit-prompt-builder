@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Credit Prompt Builder v2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Sora:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0E1117;
+  --surface: #161B24;
+  --surface2: #1E2530;
+  --border: #2A3140;
+  --border2: #343E50;
+  --accent: #3B82F6;
+  --accent2: #1D4ED8;
+  --accent-glow: rgba(59,130,246,0.15);
+  --text: #E8EDF5;
+  --text2: #8B95A8;
+  --text3: #5A6478;
+  --aaa: #22C55E; --aa: #4ADE80; --a: #86EFAC;
+  --baa: #F59E0B; --ba: #FBBF24; --b: #FCD34D;
+  --caa: #EF4444; --ca: #F87171; --c: #FCA5A5;
+  --green-bg: rgba(34,197,94,0.08); --green-border: rgba(34,197,94,0.25);
+  --amber-bg: rgba(245,158,11,0.08); --amber-border: rgba(245,158,11,0.25);
+  --red-bg: rgba(239,68,68,0.08); --red-border: rgba(239,68,68,0.25);
+  --radius: 10px; --radius-sm: 6px;
+  --mono: 'DM Mono', monospace;
+  --sans: 'Sora', sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 13px; line-height: 1.5; min-height: 100vh; }
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 99px; }
+
+.app { max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem; }
+.header { margin-bottom: 2rem; }
+.header h1 { font-size: 20px; font-weight: 600; letter-spacing: -0.3px; color: var(--text); }
+.header p { color: var(--text2); font-size: 12px; margin-top: 4px; }
+.header-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+
+/* Tabs */
+.tabs { display: flex; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 1.5rem; }
+.tab { flex: 1; padding: 10px 8px; text-align: center; font-size: 11.5px; font-weight: 500; color: var(--text3); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; border-right: 1px solid var(--border); transition: all .15s; letter-spacing: 0.2px; }
+.tab:last-child { border-right: none; }
+.tab:hover { color: var(--text2); background: var(--surface2); }
+.tab.active { background: var(--accent-glow); color: var(--accent); border-bottom: 2px solid var(--accent); }
+.tab.done { color: var(--aaa); }
+
+.view { display: none; } .view.active { display: block; }
+
+/* Cards */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1rem; }
+.card-title { font-size: 12px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.8px; display: flex; align-items: center; gap: 8px; margin-bottom: 1rem; }
+.card-title .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+
+/* Chips */
+.chips-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 6px; margin-bottom: .75rem; }
+.chip { display: flex; align-items: center; gap: 7px; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 8px 10px; cursor: pointer; background: var(--surface2); font-size: 12px; font-weight: 500; color: var(--text2); transition: all .15s; user-select: none; }
+.chip:hover { border-color: var(--border2); color: var(--text); }
+.chip.on { background: var(--accent-glow); border-color: rgba(59,130,246,0.4); color: var(--accent); }
+.chip .wt { margin-left: auto; font-size: 10px; font-family: var(--mono); color: var(--text3); }
+.chip.on .wt { color: var(--accent); }
+
+/* Buttons */
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: var(--radius-sm); font-size: 12px; font-weight: 500; cursor: pointer; border: none; font-family: var(--sans); transition: all .15s; }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: var(--accent2); }
+.btn-primary:disabled { opacity: .4; cursor: not-allowed; }
+.btn-ghost { background: transparent; color: var(--text2); border: 1px solid var(--border2); }
+.btn-ghost:hover { background: var(--surface2); color: var(--text); }
+.btn-danger { background: transparent; color: var(--caa); border: 1px solid var(--red-border); }
+.btn-danger:hover { background: var(--red-bg); }
+.btn-sm { padding: 5px 10px; font-size: 11px; }
+.btn-add { width: 100%; padding: 8px; border: 1px dashed var(--border2); border-radius: var(--radius-sm); background: transparent; color: var(--text3); font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; font-family: var(--sans); transition: all .15s; }
+.btn-add:hover { border-color: var(--accent); color: var(--accent); }
+.row-btns { display: flex; gap: 8px; justify-content: flex-end; margin-top: .75rem; }
+
+/* Weight rows */
+.w-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
+.w-row:last-child { border-bottom: none; }
+.w-name { flex: 1; color: var(--text); font-weight: 500; }
+.w-range { flex: 1.5; accent-color: var(--accent); }
+.w-val { min-width: 36px; text-align: right; font-family: var(--mono); font-size: 11px; color: var(--accent); }
+
+/* Badges */
+.badge { font-size: 10px; padding: 2px 7px; border-radius: 99px; font-weight: 600; font-family: var(--mono); letter-spacing: 0.3px; }
+.b-blue { background: rgba(59,130,246,0.15); color: #60A5FA; border: 1px solid rgba(59,130,246,0.3); }
+.b-green { background: var(--green-bg); color: var(--aaa); border: 1px solid var(--green-border); }
+.b-amber { background: var(--amber-bg); color: var(--baa); border: 1px solid var(--amber-border); }
+.b-red { background: var(--red-bg); color: var(--caa); border: 1px solid var(--red-border); }
+
+/* Rating table */
+.r-table { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: .75rem; }
+.r-row { display: grid; grid-template-columns: 48px 1fr; border-bottom: 1px solid var(--border); }
+.r-row:last-child { border-bottom: none; }
+.r-lbl { display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; font-family: var(--mono); border-right: 1px solid var(--border); }
+.r-lbl.aaa { color: var(--aaa); background: rgba(34,197,94,0.06); }
+.r-lbl.aa  { color: var(--aa);  background: rgba(74,222,128,0.05); }
+.r-lbl.a   { color: var(--a);   background: rgba(134,239,172,0.04); }
+.r-lbl.baa { color: var(--baa); background: rgba(245,158,11,0.06); }
+.r-lbl.ba  { color: var(--ba);  background: rgba(251,191,36,0.05); }
+.r-lbl.b   { color: var(--b);   background: rgba(252,211,77,0.04); }
+.r-lbl.caa { color: var(--caa); background: rgba(239,68,68,0.06); }
+.r-lbl.ca  { color: var(--ca);  background: rgba(248,113,113,0.05); }
+.r-lbl.c   { color: var(--c);   background: rgba(252,165,165,0.04); }
+.r-desc { padding: 7px 10px; font-size: 11.5px; color: var(--text); background: transparent; border: none; outline: none; resize: none; width: 100%; font-family: var(--sans); line-height: 1.4; min-height: 42px; }
+.r-desc:focus { background: var(--accent-glow); }
+
+/* Sub-factor panel */
+.rubric-nav { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 1rem; }
+.rnav-item { padding: 5px 12px; border-radius: 99px; font-size: 11.5px; font-weight: 500; cursor: pointer; border: 1px solid var(--border2); color: var(--text2); background: var(--surface2); transition: all .15s; }
+.rnav-item:hover { border-color: var(--accent); color: var(--accent); }
+.rnav-item.active { background: var(--accent-glow); border-color: rgba(59,130,246,0.4); color: var(--accent); }
+
+.sf-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: .75rem; }
+.sf-item { border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface2); overflow: hidden; }
+.sf-header { display: flex; align-items: center; gap: 8px; padding: 9px 12px; cursor: pointer; }
+.sf-name { flex: 1; font-size: 12px; font-weight: 500; color: var(--text); }
+.sf-wt { font-size: 10px; font-family: var(--mono); color: var(--text3); }
+.sf-expand { font-size: 11px; color: var(--text3); transition: transform .2s; }
+.sf-body { display: none; border-top: 1px solid var(--border); }
+.sf-body.open { display: block; }
+.sf-config { padding: 10px 12px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border); }
+.sf-config label { font-size: 11px; color: var(--text2); }
+.sf-config input[type=range] { flex: 1; accent-color: var(--accent); }
+.sf-config .sf-wval { font-family: var(--mono); font-size: 11px; color: var(--accent); min-width: 28px; }
+.sf-del { background: transparent; border: none; cursor: pointer; color: var(--text3); font-size: 13px; padding: 2px 4px; transition: color .15s; }
+.sf-del:hover { color: var(--caa); }
+
+/* Prompt cards */
+.prompt-cards { display: flex; flex-direction: column; gap: 8px; }
+.pc { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.pc-head { display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: var(--surface); cursor: pointer; }
+.pc-rubric { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text3); font-family: var(--mono); }
+.pc-name { flex: 1; font-size: 12.5px; font-weight: 500; color: var(--text); }
+.pc-wt { font-family: var(--mono); font-size: 10px; color: var(--text3); }
+.pc-chev { font-size: 10px; color: var(--text3); transition: transform .2s; }
+.pc-body { display: none; border-top: 1px solid var(--border); }
+.pc-body.open { display: block; }
+.prompt-pre { background: var(--surface2); font-size: 11px; font-family: var(--mono); color: var(--text); padding: 14px; white-space: pre-wrap; line-height: 1.6; max-height: 280px; overflow-y: auto; border-bottom: 1px solid var(--border); }
+.pc-actions { display: flex; gap: 6px; padding: 8px 12px; background: var(--surface); }
+
+/* Modal */
+.modal-ov { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6); align-items: center; justify-content: center; z-index: 999; backdrop-filter: blur(4px); }
+.modal-ov.show { display: flex; }
+.modal { background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius); padding: 1.5rem; width: 380px; max-width: 90vw; box-shadow: 0 24px 64px rgba(0,0,0,.5); }
+.modal-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 1rem; }
+.f-label { font-size: 11px; color: var(--text2); display: block; margin-bottom: 5px; margin-top: 10px; letter-spacing: 0.3px; }
+.f-label:first-of-type { margin-top: 0; }
+.f-input { width: 100%; font-size: 12.5px; padding: 8px 10px; border: 1px solid var(--border2); border-radius: var(--radius-sm); background: var(--surface2); color: var(--text); font-family: var(--sans); outline: none; transition: border-color .15s; }
+.f-input:focus { border-color: var(--accent); }
+
+/* Library */
+.meth-list { display: flex; flex-direction: column; gap: 6px; max-height: 320px; overflow-y: auto; margin-bottom: .75rem; }
+.meth-item { display: flex; align-items: center; gap: 10px; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 14px; background: var(--surface2); transition: border-color .15s; }
+.meth-item:hover { border-color: var(--border2); }
+.meth-name { font-size: 12.5px; font-weight: 500; color: var(--text); flex: 1; }
+.meth-meta { font-size: 10.5px; color: var(--text3); margin-top: 2px; }
+.empty { text-align: center; padding: 2.5rem; color: var(--text3); font-size: 12px; border: 1px dashed var(--border); border-radius: var(--radius); }
+
+/* Copy bar */
+.copy-bar { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 14px; display: flex; align-items: center; gap: 10px; margin-bottom: 1rem; font-size: 12px; color: var(--text2); }
+
+/* Toast */
+.toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(8px); background: var(--surface2); border: 1px solid var(--border2); border-radius: var(--radius-sm); padding: 8px 16px; font-size: 12px; color: var(--text); display: none; align-items: center; gap: 8px; z-index: 9999; white-space: nowrap; box-shadow: 0 8px 32px rgba(0,0,0,.4); opacity: 0; transition: opacity .2s, transform .2s; }
+.toast.show { display: flex; opacity: 1; transform: translateX(-50%) translateY(0); }
+
+.section-sub { font-size: 11px; color: var(--text3); margin-bottom: .75rem; }
+.divider { border: none; border-top: 1px solid var(--border); margin: 1rem 0; }
+.spinner { width: 12px; height: 12px; border: 2px solid var(--border2); border-top-color: var(--accent); border-radius: 50%; animation: spin .5s linear infinite; display: inline-block; }
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<!-- Modals -->
+<div class="modal-ov" id="mAddCat">
+  <div class="modal">
+    <div class="modal-title">Add category</div>
+    <label class="f-label">Name</label>
+    <input class="f-input" id="mAddCatName" placeholder="e.g. Country Risk"/>
+    <div class="row-btns" style="margin-top:1.25rem">
+      <button class="btn btn-ghost" onclick="closeM('mAddCat')">Cancel</button>
+      <button class="btn btn-primary" onclick="doAddCat()">Add</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-ov" id="mAddSF">
+  <div class="modal">
+    <div class="modal-title">Add sub-factor</div>
+    <label class="f-label">Name</label>
+    <input class="f-input" id="mSFName" placeholder="e.g. Pricing Power"/>
+    <label class="f-label">Weight in category (%)</label>
+    <input class="f-input" id="mSFWeight" type="number" min="1" max="100" value="20"/>
+    <div class="row-btns" style="margin-top:1.25rem">
+      <button class="btn btn-ghost" onclick="closeM('mAddSF')">Cancel</button>
+      <button class="btn btn-primary" onclick="doAddSF()">Add sub-factor</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-ov" id="mSave">
+  <div class="modal">
+    <div class="modal-title">Save methodology</div>
+    <label class="f-label">Methodology name</label>
+    <input class="f-input" id="mSaveName" placeholder="e.g. Moody's Corporate IG"/>
+    <label class="f-label">Description (optional)</label>
+    <input class="f-input" id="mSaveDesc" placeholder="e.g. 6-factor framework for investment grade"/>
+    <div class="row-btns" style="margin-top:1.25rem">
+      <button class="btn btn-ghost" onclick="closeM('mSave')">Cancel</button>
+      <button class="btn btn-primary" id="btnSaveOk" onclick="doSave()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-ov" id="mLoad">
+  <div class="modal">
+    <div class="modal-title">Load methodology</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:.5rem" id="mLoadMsg"></p>
+    <div class="row-btns" style="margin-top:1.25rem">
+      <button class="btn btn-ghost" onclick="closeM('mLoad')">Cancel</button>
+      <button class="btn btn-primary" onclick="doLoad()">Load</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-ov" id="mDel">
+  <div class="modal">
+    <div class="modal-title">Delete methodology</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:.5rem" id="mDelMsg"></p>
+    <div class="row-btns" style="margin-top:1.25rem">
+      <button class="btn btn-ghost" onclick="closeM('mDel')">Cancel</button>
+      <button class="btn btn-danger" onclick="doDel()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<div class="app">
+  <div class="header">
+    <div class="header-row">
+      <div>
+        <h1>Credit Prompt Builder <span style="font-size:11px;font-weight:400;color:var(--text3);font-family:var(--mono);margin-left:6px">v2</span></h1>
+        <p>Build structured qualitative credit analysis prompts — one per sub-factor + synthesis per category</p>
+      </div>
+      <button class="btn btn-ghost" onclick="openM('mSave')">💾 Save methodology</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" id="t1" onclick="goTab(1)">📚 Library</div>
+    <div class="tab" id="t2" onclick="goTab(2)">⚙️ Categories</div>
+    <div class="tab" id="t3" onclick="goTab(3)">🎯 Sub-factors</div>
+    <div class="tab" id="t4" onclick="goTab(4)">📝 Criteria</div>
+    <div class="tab" id="t5" onclick="goTab(5)">✨ Prompts</div>
+  </div>
+
+  <!-- TAB 1: Library -->
+  <div class="view active" id="v1">
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>Saved methodologies</div>
+      <div class="meth-list" id="methList"><div class="empty">No saved methodologies yet.</div></div>
+      <div class="row-btns" style="margin-top:0">
+        <button class="btn btn-ghost btn-sm" onclick="loadLib()">↻ Refresh</button>
+        <button class="btn btn-primary" onclick="openM('mSave')">💾 Save current</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>Current workspace</div>
+      <p class="section-sub">Configure your categories, sub-factors and criteria in the next tabs.</p>
+      <div class="row-btns" style="margin-top:0">
+        <button class="btn btn-ghost" onclick="resetWS()">🗑 Reset to defaults</button>
+        <button class="btn btn-primary" onclick="goTab(2)">Start configuring →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2: Categories -->
+  <div class="view" id="v2">
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>Categories <span class="badge b-blue" id="selCount">0</span></div>
+      <p class="section-sub">Select which categories to include. Adjust weights below.</p>
+      <div class="chips-grid" id="catGrid"></div>
+      <button class="btn-add" onclick="openM('mAddCat')">+ Add custom category</button>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>Category weights <span class="badge" id="totBadge">0%</span></div>
+      <div id="wRows"></div>
+    </div>
+    <div class="row-btns">
+      <button class="btn btn-primary" onclick="goTab(3)">Configure sub-factors →</button>
+    </div>
+  </div>
+
+  <!-- TAB 3: Sub-factors -->
+  <div class="view" id="v3">
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>Sub-factors per category</div>
+      <p class="section-sub">Each sub-factor will receive its own dedicated prompt. Weights sum per category.</p>
+      <div class="rubric-nav" id="sfNav"></div>
+      <div class="sf-list" id="sfList"></div>
+      <button class="btn-add" id="btnAddSF" onclick="openAddSF()">+ Add sub-factor</button>
+      <div style="margin-top:.75rem;display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text3)">
+        Sub-factor weights in <strong style="color:var(--text2)" id="sfTotLabel">—</strong>: <span class="badge" id="sfTotBadge">0%</span>
+      </div>
+    </div>
+    <div class="row-btns">
+      <button class="btn btn-ghost" onclick="goTab(2)">← Back</button>
+      <button class="btn btn-primary" onclick="goTab(4)">Configure criteria →</button>
+    </div>
+  </div>
+
+  <!-- TAB 4: Criteria -->
+  <div class="view" id="v4">
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>Rating criteria</div>
+      <p class="section-sub">Define observable conditions for each rating level, per sub-factor.</p>
+      <div class="rubric-nav" id="critNav"></div>
+      <div style="margin-bottom:.5rem;font-size:11px;color:var(--text3);display:flex;align-items:center;gap:6px">
+        Sub-factor: <span class="badge b-blue" id="critSFLabel">—</span>
+        <span id="critSFWt" style="font-family:var(--mono);font-size:10px;color:var(--text3)"></span>
+      </div>
+      <div class="r-table" id="critTable"></div>
+    </div>
+    <div class="row-btns">
+      <button class="btn btn-ghost" onclick="goTab(3)">← Back</button>
+      <button class="btn btn-primary" onclick="goTab(5)">Generate prompts ✨</button>
+    </div>
+  </div>
+
+  <!-- TAB 5: Prompts -->
+  <div class="view" id="v5">
+    <div class="copy-bar">
+      <span style="flex:1">One self-contained prompt per sub-factor — ready to use on any issuer.</span>
+      <button class="btn btn-ghost btn-sm" onclick="copyAll()">📋 Copy all</button>
+      <button class="btn btn-primary btn-sm" onclick="exportJSON()">⬇ Export JSON</button>
+    </div>
+    <div class="prompt-cards" id="promptCards"></div>
+    <div class="row-btns" style="margin-top:.5rem">
+      <button class="btn btn-ghost" onclick="goTab(4)">← Edit criteria</button>
+      <button class="btn btn-primary" onclick="openM('mSave')">💾 Save methodology</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const LEVELS = ['Aaa','Aa','A','Baa','Ba','B','Caa','Ca','C'];
+const LCSS   = ['aaa','aa','a','baa','ba','b','caa','ca','c'];
+
+const DEF_CRIT = {
+  Aaa: 'Exceptional. Undisputed leadership, very high barriers to entry, negligible vulnerability to adverse conditions.',
+  Aa:  'Very strong. Durable competitive advantages, low exposure to exogenous shocks.',
+  A:   'Good. Minor vulnerabilities, adequate diversification, limited cycle sensitivity.',
+  Baa: 'Adequate. Moderate exposure to adverse conditions, some manageable weaknesses.',
+  Ba:  'Fragile. Meaningful cycle sensitivity, significant medium-term uncertainties.',
+  B:   'Weak. High dependence on favorable conditions, significant risk to metrics.',
+  Caa: 'Very weak. High probability of financial or operational distress.',
+  Ca:  'Critical. Default or near-default, restructuring highly likely.',
+  C:   'In default or advanced restructuring. Very limited recovery prospects.'
+};
+
+const RUBRICS_DEF = [
+  { name:'Business Profile',     icon:'🏢', weight:25, sel:true,  useSubs:true,
+    criteria:{...DEF_CRIT},
+    subs:[ {name:'Competitive Position', weight:40, criteria:{...DEF_CRIT}},
+           {name:'Revenue Diversification', weight:30, criteria:{...DEF_CRIT}},
+           {name:'Pricing Power', weight:30, criteria:{...DEF_CRIT}} ] },
+  { name:'Industry & Country Risk', icon:'🌍', weight:10, sel:true, useSubs:true,
+    criteria:{...DEF_CRIT},
+    subs:[ {name:'Sector Cyclicality', weight:50, criteria:{...DEF_CRIT}},
+           {name:'Regulatory Environment', weight:50, criteria:{...DEF_CRIT}} ] },
+  { name:'Management & Strategy', icon:'👥', weight:10, sel:true, useSubs:true,
+    criteria:{...DEF_CRIT},
+    subs:[ {name:'Track Record & Execution', weight:50, criteria:{...DEF_CRIT}},
+           {name:'Strategic Clarity', weight:50, criteria:{...DEF_CRIT}} ] },
+  { name:'Financial Policy',     icon:'📊', weight:15, sel:true,  useSubs:true,
+    criteria:{...DEF_CRIT},
+    subs:[ {name:'Leverage Target', weight:50, criteria:{...DEF_CRIT}},
+           {name:'Shareholder Returns Policy', weight:50, criteria:{...DEF_CRIT}} ] },
+  { name:'Leverage & Coverage',  icon:'⚖️', weight:20, sel:true,  useSubs:true,
+    criteria:{...DEF_CRIT},
+    subs:[ {name:'Net Debt / EBITDA', weight:40, criteria:{...DEF_CRIT}},
+           {name:'Interest Coverage (EBITDA/Interest)', weight:35, criteria:{...DEF_CRIT}},
+           {name:'FFO / Net Debt', weight:25, criteria:{...DEF_CRIT}} ] },
+  { name:'Liquidity',            icon:'💧', weight:15, sel:true,  useSubs:true,
+    criteria:{...DEF_CRIT},
+    subs:[ {name:'Liquidity Sources vs Uses', weight:50, criteria:{...DEF_CRIT}},
+           {name:'Debt Maturity Profile', weight:30, criteria:{...DEF_CRIT}},
+           {name:'Capital Market Access', weight:20, criteria:{...DEF_CRIT}} ] },
+  { name:'ESG',                  icon:'🌱', weight:5,  sel:false, useSubs:false,
+    criteria:{...DEF_CRIT},
+    subs:[] },
+];
+
+function deepClone(o) { return JSON.parse(JSON.stringify(o)); }
+let rubrics = deepClone(RUBRICS_DEF);
+let activeSFCat = null;
+let activeCritCat = null;
+let activeCritSF = null;
+let openSF = {};
+let openPC = {};
+let pendingLoadKey = null;
+let pendingDelKey = null;
+
+// ── Toast ─────────────────────────────────────────────────────
+let _toastTO;
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(_toastTO); _toastTO=setTimeout(()=>t.classList.remove('show'),2400); }
+
+// ── Modals ────────────────────────────────────────────────────
+function openM(id){ document.getElementById(id).classList.add('show'); }
+function closeM(id){ document.getElementById(id).classList.remove('show'); }
+document.querySelectorAll('.modal-ov').forEach(el=>el.addEventListener('click',e=>{ if(e.target===el)el.classList.remove('show'); }));
+
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function escPre(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ── Tabs ──────────────────────────────────────────────────────
+function goTab(n){
+  [1,2,3,4,5].forEach(i=>{
+    document.getElementById('v'+i).classList.toggle('active',i===n);
+    const t=document.getElementById('t'+i);
+    t.classList.remove('active','done');
+    if(i===n) t.classList.add('active');
+    else if(i<n) t.classList.add('done');
+  });
+  if(n===1) loadLib();
+  if(n===2) renderTab2();
+  if(n===3) renderTab3();
+  if(n===4) renderTab4();
+  if(n===5) renderTab5();
+}
+
+function resetWS(){ rubrics=deepClone(RUBRICS_DEF); activeSFCat=null; activeCritCat=null; activeCritSF=null; openSF={}; openPC={}; toast('Workspace reset.'); renderTab2(); }
+
+// ── Tab 2: Categories ─────────────────────────────────────────
+function renderTab2(){
+  const sel=rubrics.filter(r=>r.sel);
+  document.getElementById('selCount').textContent=sel.length+' selected';
+  document.getElementById('catGrid').innerHTML=rubrics.map((r,i)=>`
+    <div class="chip ${r.sel?'on':''}" onclick="toggleCat(${i})">${r.icon} ${r.name}<span class="wt">${r.weight}%</span></div>`).join('');
+  renderWeights();
+}
+function toggleCat(i){ rubrics[i].sel=!rubrics[i].sel; renderTab2(); }
+function renderWeights(){
+  const sel=rubrics.filter(r=>r.sel);
+  const tot=sel.reduce((s,r)=>s+r.weight,0);
+  const tb=document.getElementById('totBadge');
+  tb.textContent=tot+'%'; tb.className='badge '+(tot===100?'b-green':'b-amber');
+  document.getElementById('wRows').innerHTML = sel.map(r=>{
+    const gi=rubrics.indexOf(r);
+    return`<div class="w-row"><span class="w-name">${r.icon} ${r.name}</span>
+      <input type="range" class="w-range" min="0" max="100" step="5" value="${r.weight}" oninput="updW(${gi},+this.value)"/>
+      <input type="number" min="0" max="100" step="5" value="${r.weight}" style="width:48px;font-size:11px;font-family:var(--mono);background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--accent);padding:2px 4px;text-align:center" oninput="updW(${gi},+this.value)" id="wnum${gi}"/>
+      <span style="font-size:11px;color:var(--text3)">%</span></div>`;
+  }).join('');
+}
+function updW(i,v){
+  v=Math.max(0,Math.min(100,+v||0));
+  rubrics[i].weight=v;
+  const ni=document.getElementById('wnum'+i); if(ni)ni.value=v;
+  const si=document.querySelector(`input[type=range][oninput="updW(${i},+this.value)"]`); if(si)si.value=v;
+  const sel=rubrics.filter(r=>r.sel); const tot=sel.reduce((s,r)=>s+r.weight,0);
+  const tb=document.getElementById('totBadge'); tb.textContent=tot+'%'; tb.className='badge '+(tot===100?'b-green':'b-amber');
+}
+function doAddCat(){
+  const name=document.getElementById('mAddCatName').value.trim(); if(!name)return;
+  rubrics.push({name,icon:'📌',weight:10,sel:true,useSubs:false,criteria:{...DEF_CRIT},subs:[]});
+  closeM('mAddCat'); document.getElementById('mAddCatName').value=''; renderTab2();
+}
+
+// ── Tab 3: Sub-factors ────────────────────────────────────────
+function renderTab3(){
+  const sel=rubrics.filter(r=>r.sel);
+  if(!sel.length)return;
+  if(!activeSFCat||!sel.find(r=>r.name===activeSFCat)) activeSFCat=sel[0].name;
+  document.getElementById('sfNav').innerHTML=sel.map(r=>`
+    <div class="rnav-item ${r.name===activeSFCat?'active':''}" onclick="setSFCat('${esc(r.name)}')">${r.icon} ${r.name}${r.useSubs?'':' <span style="font-size:9px;opacity:.6">direct</span>'}</div>`).join('');
+  renderSFList();
+}
+function setSFCat(name){ activeSFCat=name; renderTab3(); }
+function renderSFList(){
+  const r=rubrics.find(x=>x.name===activeSFCat); if(!r)return;
+  const ci=rubrics.indexOf(r);
+  // Toggle button
+  const toggleHTML=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:.75rem;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm)">
+    <span style="font-size:12px;color:var(--text2);flex:1">Use sub-factors for <b style="color:var(--text)">${esc(r.name)}</b></span>
+    <button class="btn btn-sm ${r.useSubs?'btn-primary':'btn-ghost'}" onclick="toggleUseSubs(${ci})">
+      ${r.useSubs?'✅ Enabled — click to disable':'☐ Disabled — click to enable'}
+    </button>
+  </div>`;
+
+  if(!r.useSubs){
+    document.getElementById('sfList').innerHTML=toggleHTML+`<div style="font-size:12px;color:var(--text3);padding:12px;border:1px dashed var(--border);border-radius:var(--radius-sm);text-align:center">No sub-factors — criteria are defined directly on the category in the next tab.</div>`;
+    document.getElementById('sfTotLabel').textContent=r.name;
+    document.getElementById('sfTotBadge').textContent='—'; document.getElementById('sfTotBadge').className='badge b-blue';
+    document.getElementById('btnAddSF').style.display='none';
+    return;
+  }
+
+  document.getElementById('btnAddSF').style.display='';
+  const tot=r.subs.reduce((s,sf)=>s+sf.weight,0);
+  const sb=document.getElementById('sfTotBadge'); sb.textContent=tot+'%'; sb.className='badge '+(tot===100?'b-green':'b-amber');
+  document.getElementById('sfTotLabel').textContent=r.name;
+  document.getElementById('sfList').innerHTML=toggleHTML+r.subs.map((sf,si)=>{
+    const isOpen=openSF[activeSFCat+'_'+si];
+    return`<div class="sf-item">
+      <div class="sf-header" onclick="toggleSF('${esc(activeSFCat)}',${si})">
+        <span class="sf-name">${esc(sf.name)}</span>
+        <span class="sf-wt">${sf.weight}%</span>
+        <span class="sf-expand" id="sfchev_${si}" style="transform:${isOpen?'rotate(180deg)':''}">▼</span>
+        <button class="sf-del" onclick="delSF(${ci},${si},event)" title="Remove">✕</button>
+      </div>
+      <div class="sf-body ${isOpen?'open':''}" id="sfbody_${si}">
+        <div class="sf-config">
+          <label>Weight in ${esc(r.name)}:</label>
+          <input type="range" min="0" max="100" step="5" value="${sf.weight}" oninput="updSFW(${ci},${si},+this.value)" id="sfslider_${ci}_${si}"/>
+          <input type="number" min="0" max="100" step="5" value="${sf.weight}" style="width:44px;font-size:11px;font-family:var(--mono);background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--accent);padding:2px 4px;text-align:center" oninput="updSFW(${ci},${si},+this.value)" id="sfnum_${ci}_${si}"/>
+          <span style="font-size:11px;color:var(--text3)">%</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+function toggleUseSubs(ci){
+  rubrics[ci].useSubs=!rubrics[ci].useSubs;
+  if(rubrics[ci].useSubs && rubrics[ci].subs.length===0){
+    rubrics[ci].subs=[{name:'Sub-factor 1',weight:100,criteria:{...DEF_CRIT}}];
+  }
+  renderSFList(); renderTab3();
+}
+function toggleSF(cat,si){
+  const key=cat+'_'+si; openSF[key]=!openSF[key];
+  document.getElementById('sfbody_'+si).classList.toggle('open',openSF[key]);
+  document.getElementById('sfchev_'+si).style.transform=openSF[key]?'rotate(180deg)':'';
+}
+function updSFW(ci,si,v){
+  v=Math.max(0,Math.min(100,+v||0));
+  rubrics[ci].subs[si].weight=v;
+  const sl=document.getElementById('sfslider_'+ci+'_'+si); if(sl)sl.value=v;
+  const ni=document.getElementById('sfnum_'+ci+'_'+si); if(ni)ni.value=v;
+  const r=rubrics[ci]; const tot=r.subs.reduce((s,sf)=>s+sf.weight,0);
+  const sb=document.getElementById('sfTotBadge'); if(sb){sb.textContent=tot+'%'; sb.className='badge '+(tot===100?'b-green':'b-amber');}
+}
+function delSF(ci,si,e){ e.stopPropagation(); rubrics[ci].subs.splice(si,1); if(rubrics[ci].subs.length===0) rubrics[ci].useSubs=false; renderSFList(); renderTab3(); }
+let _pendingSFCat=null;
+function openAddSF(){ _pendingSFCat=activeSFCat; document.getElementById('mSFName').value=''; document.getElementById('mSFWeight').value=20; openM('mAddSF'); }
+function doAddSF(){
+  const name=document.getElementById('mSFName').value.trim(); const w=+document.getElementById('mSFWeight').value||20; if(!name)return;
+  const r=rubrics.find(x=>x.name===_pendingSFCat); if(!r)return;
+  r.subs.push({name,weight:w,criteria:{...DEF_CRIT}});
+  closeM('mAddSF'); renderSFList();
+}
+
+// ── Tab 4: Criteria ───────────────────────────────────────────
+function renderTab4(){
+  const sel=rubrics.filter(r=>r.sel);
+  if(!sel.length)return;
+  if(!activeCritCat||!sel.find(r=>r.name===activeCritCat)){
+    activeCritCat=sel[0].name;
+    activeCritSF=sel[0].useSubs&&sel[0].subs.length?sel[0].subs[0].name:null;
+  }
+  document.getElementById('critNav').innerHTML=sel.map(r=>`
+    <div class="rnav-item ${r.name===activeCritCat?'active':''}" onclick="setCritCat('${esc(r.name)}')">${r.icon} ${r.name}${r.useSubs?'':' <span style="font-size:9px;opacity:.6">direct</span>'}</div>`).join('');
+  renderCritSFTabs();
+}
+function setCritCat(name){
+  activeCritCat=name;
+  const r=rubrics.find(x=>x.name===name);
+  activeCritSF=(r&&r.useSubs&&r.subs.length)?r.subs[0].name:null;
+  renderTab4();
+}
+function renderCritSFTabs(){
+  const r=rubrics.find(x=>x.name===activeCritCat); if(!r)return;
+  const existing=document.getElementById('critSFRow'); if(existing)existing.remove();
+
+  if(!r.useSubs){
+    // Direct mode — no sub-factor tabs, edit category criteria directly
+    document.getElementById('critSFLabel').textContent=r.name;
+    document.getElementById('critSFWt').textContent='(direct — no sub-factors)';
+    renderCritTable();
+    return;
+  }
+
+  // Sub-factor tabs
+  if(!activeCritSF||!r.subs.find(s=>s.name===activeCritSF)) activeCritSF=r.subs[0]?.name||null;
+  let sfTabsHTML='<div id="critSFRow" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:6px;">';
+  r.subs.forEach(sf=>{
+    sfTabsHTML+=`<div class="rnav-item" style="font-size:11px;padding:4px 9px;${sf.name===activeCritSF?'background:rgba(59,130,246,0.12);border-color:rgba(59,130,246,0.3);color:var(--accent)':''}" onclick="setCritSF('${esc(sf.name)}')">${esc(sf.name)} <span style="font-family:var(--mono);font-size:9px;color:var(--text3)">${sf.weight}%</span></div>`;
+  });
+  sfTabsHTML+='</div>';
+  const div=document.createElement('div'); div.innerHTML=sfTabsHTML;
+  document.getElementById('critNav').after(div.firstChild);
+
+  const sf=r.subs.find(s=>s.name===activeCritSF);
+  document.getElementById('critSFLabel').textContent=activeCritSF||'';
+  document.getElementById('critSFWt').textContent=sf?'('+sf.weight+'% of '+r.name+')':'';
+  renderCritTable();
+}
+function setCritSF(name){ activeCritSF=name; renderCritSFTabs(); }
+function renderCritTable(){
+  const r=rubrics.find(x=>x.name===activeCritCat); if(!r)return;
+  let ci=rubrics.indexOf(r);
+
+  if(!r.useSubs){
+    // Edit criteria directly on the category
+    document.getElementById('critTable').innerHTML=LEVELS.map((lvl,i)=>`
+      <div class="r-row">
+        <div class="r-lbl ${LCSS[i]}">${lvl}</div>
+        <textarea class="r-desc" rows="2" onchange="updCatCrit(${ci},'${lvl}',this.value)">${esc(r.criteria[lvl]||'')}</textarea>
+      </div>`).join('');
+    return;
+  }
+
+  const sf=r.subs.find(s=>s.name===activeCritSF); if(!sf)return;
+  const si=r.subs.indexOf(sf);
+  document.getElementById('critTable').innerHTML=LEVELS.map((lvl,i)=>`
+    <div class="r-row">
+      <div class="r-lbl ${LCSS[i]}">${lvl}</div>
+      <textarea class="r-desc" rows="2" onchange="updCrit(${ci},${si},'${lvl}',this.value)">${esc(sf.criteria[lvl]||'')}</textarea>
+    </div>`).join('');
+}
+function updCatCrit(ci,lvl,val){ rubrics[ci].criteria[lvl]=val; }
+function updCrit(ci,si,lvl,val){ rubrics[ci].subs[si].criteria[lvl]=val; }
+
+// ── Prompt builder ─────────────────────────────────────────────
+function buildFocus(cat, sf){
+  const top=sf.criteria['Aaa']||''; const mid=sf.criteria['Baa']||''; const low=sf.criteria['C']||'';
+  let f=`This sub-factor assesses <strong>${sf.name}</strong> within the <strong>${cat.name}</strong> category. `;
+  f+=`It carries a weight of ${sf.weight}% within ${cat.name} (${cat.weight}% of the composite rating). `;
+  if(top) f+=`At the top of the scale (Aaa): ${top.replace(/\.?$/,'.')} `;
+  if(mid) f+=`At the median (Baa): ${mid.replace(/\.?$/,'.')} `;
+  if(low) f+=`At the bottom (C): ${low.replace(/\.?$/,'.')} `;
+  f+=`Apply the full criteria grid below to identify the level that best matches the observable evidence.`;
+  return f.replace(/<strong>/g,'').replace(/<\/strong>/g,'');
+}
+
+function buildPrompt(cat, sf){
+  let p='';
+  p+=`You are a senior credit analyst specializing in qualitative credit analysis following Moody\'s methodology.\n\n`;
+  p+=`## Sub-factor: ${sf.name}\n`;
+  p+=`Category: ${cat.name} (${cat.weight}% of composite rating)\n`;
+  p+=`Sub-factor weight within ${cat.name}: ${sf.weight}%\n\n`;
+  p+=`---\n\n`;
+  p+=`## Analytical Focus\n${buildFocus(cat,sf)}\n\n`;
+  p+=`---\n\n`;
+  p+=`## Rating Scale & Criteria\n\n`;
+  p+=`Select the level that best matches the observable evidence for the issuer under review.\n\n`;
+  LEVELS.forEach(lvl=>{
+    p+=`**${lvl}** — ${sf.criteria[lvl]||'(not defined)'}\n\n`;
+  });
+  p+=`---\n\n`;
+  p+=`## Instructions\n\n`;
+  p+=`1. Review all available information on the issuer (provided documents, public data, market intelligence).\n`;
+  p+=`2. Identify the factual evidence that maps to the criteria above.\n`;
+  p+=`3. Assign a rating (Aaa, Aa, A, Baa, Ba, B, Caa, Ca, or C).\n`;
+  p+=`4. Justify your assessment in 3 to 5 sentences, citing quantitative data points where available.\n`;
+  p+=`5. Flag areas of uncertainty or missing information that limit your conviction.\n\n`;
+  p+=`---\n\n`;
+  p+=`## Expected Output Format\n\n`;
+  p+=`**${cat.name} — ${sf.name}**\n\n`;
+  p+=`- **Rating assigned:** [Aaa / Aa / A / Baa / Ba / B / Caa / Ca / C]\n`;
+  p+=`- **Rationale:** [3–5 sentences with data points]\n`;
+  p+=`- **Supporting factors:** [bullet list]\n`;
+  p+=`- **Risk factors / concerns:** [bullet list]\n`;
+  p+=`- **Conviction level:** [High / Moderate / Low] — [brief explanation if not High]\n`;
+  return p;
+}
+
+// ── Direct category prompt (no sub-factors) ───────────────────
+function buildDirectPrompt(cat){
+  const top=cat.criteria['Aaa']||''; const mid=cat.criteria['Baa']||''; const low=cat.criteria['C']||'';
+  let focus=`This category assesses ${cat.name} of the issuer. Weight in composite rating: ${cat.weight}%. `;
+  if(top) focus+=`At the top of the scale (Aaa): ${top.replace(/\.?$/,'.')} `;
+  if(mid) focus+=`At the median (Baa): ${mid.replace(/\.?$/,'.')} `;
+  if(low) focus+=`At the bottom (C): ${low.replace(/\.?$/,'.')} `;
+  focus+=`Apply the full criteria grid below to identify the level that best matches the observable evidence.`;
+
+  let p='';
+  p+=`You are a senior credit analyst specializing in qualitative credit analysis following Moody's methodology.\n\n`;
+  p+=`## Category: ${cat.name}\n`;
+  p+=`Weight in composite rating: ${cat.weight}%\n\n`;
+  p+=`---\n\n`;
+  p+=`## Analytical Focus\n${focus}\n\n`;
+  p+=`---\n\n`;
+  p+=`## Rating Scale & Criteria\n\n`;
+  p+=`Select the level that best matches the observable evidence for the issuer under review.\n\n`;
+  LEVELS.forEach(lvl=>{
+    p+=`**${lvl}** — ${cat.criteria[lvl]||'(not defined)'}\n\n`;
+  });
+  p+=`---\n\n`;
+  p+=`## Instructions\n\n`;
+  p+=`1. Review all available information on the issuer (provided documents, public data, market intelligence).\n`;
+  p+=`2. Identify the factual evidence that maps to the criteria above.\n`;
+  p+=`3. Assign a rating (Aaa, Aa, A, Baa, Ba, B, Caa, Ca, or C).\n`;
+  p+=`4. Justify your assessment in 3 to 5 sentences, citing quantitative data points where available.\n`;
+  p+=`5. Flag areas of uncertainty or missing information that limit your conviction.\n\n`;
+  p+=`---\n\n`;
+  p+=`## Expected Output Format\n\n`;
+  p+=`**Category: ${cat.name}**\n\n`;
+  p+=`- **Rating assigned:** [Aaa / Aa / A / Baa / Ba / B / Caa / Ca / C]\n`;
+  p+=`- **Rationale:** [3–5 sentences with data points]\n`;
+  p+=`- **Supporting factors:** [bullet list]\n`;
+  p+=`- **Risk factors / concerns:** [bullet list]\n`;
+  p+=`- **Conviction level:** [High / Moderate / Low] — [brief explanation if not High]\n`;
+  return p;
+}
+
+// ── Tab 5: Prompts ────────────────────────────────────────────
+function renderTab5(){
+  openPC={};
+  const sel=rubrics.filter(r=>r.sel);
+  let html='';
+
+  sel.forEach(cat=>{
+    if(!cat.useSubs){
+      // ── Direct category prompt ──
+      const key='direct_'+cat.name;
+      html+=`<div class="pc">
+        <div class="pc-head" onclick="togglePC('${esc(key)}')">
+          <span class="pc-rubric">${esc(cat.icon)} ${esc(cat.name)}</span>
+          <span class="pc-name">Direct prompt</span>
+          <span class="pc-wt">${cat.weight}% of composite</span>
+          <span class="pc-chev" id="pcchev_${esc(key)}">▼</span>
+        </div>
+        <div class="pc-body" id="pcbody_${esc(key)}">
+          <pre class="prompt-pre">${escPre(buildDirectPrompt(cat))}</pre>
+          <div class="pc-actions">
+            <button class="btn btn-primary btn-sm" onclick="copyDirect('${esc(cat.name)}',event)">📋 Copy</button>
+          </div>
+        </div>
+      </div>`;
+    } else {
+      // ── Synthesis prompt (category header) ──
+      const synthKey='synth_'+cat.name;
+      html+=`<div class="pc" style="border-color:rgba(59,130,246,0.35)">
+        <div class="pc-head" onclick="togglePC('${esc(synthKey)}')" style="background:rgba(59,130,246,0.08)">
+          <span class="pc-rubric" style="color:var(--accent)">${esc(cat.icon)} ${esc(cat.name)}</span>
+          <span class="pc-name" style="color:var(--accent)">⊕ Synthesis prompt</span>
+          <span class="pc-wt">${cat.weight}% of composite</span>
+          <span class="badge b-blue" style="font-size:9px">SYNTHESIS</span>
+          <span class="pc-chev" id="pcchev_${esc(synthKey)}">▼</span>
+        </div>
+        <div class="pc-body" id="pcbody_${esc(synthKey)}">
+          <pre class="prompt-pre">${escPre(buildSynthesisPrompt(cat))}</pre>
+          <div class="pc-actions">
+            <button class="btn btn-primary btn-sm" onclick="copySynth('${esc(cat.name)}',event)">📋 Copy synthesis prompt</button>
+          </div>
+        </div>
+      </div>`;
+
+      // ── Sub-factor prompts ──
+      cat.subs.forEach((sf,si)=>{
+        const key=cat.name+'_'+si;
+        html+=`<div class="pc" style="margin-left:16px">
+          <div class="pc-head" onclick="togglePC('${esc(key)}')">
+            <span class="pc-rubric">${esc(cat.name)}</span>
+            <span class="pc-name">${esc(sf.name)}</span>
+            <span class="pc-wt">${sf.weight}% of ${cat.weight}%</span>
+            <span class="pc-chev" id="pcchev_${esc(key)}">▼</span>
+          </div>
+          <div class="pc-body" id="pcbody_${esc(key)}">
+            <pre class="prompt-pre">${escPre(buildPrompt(cat,sf))}</pre>
+            <div class="pc-actions">
+              <button class="btn btn-primary btn-sm" onclick="copyOne('${esc(cat.name)}','${si}',event)">📋 Copy</button>
+            </div>
+          </div>
+        </div>`;
+      });
+    }
+    html+=`<div style="height:8px"></div>`;
+  });
+
+  document.getElementById('promptCards').innerHTML=html||'<div class="empty">No active categories.</div>';
+}
+function buildSynthesisPrompt(cat){
+  let p='';
+  p+=`You are a senior credit analyst specializing in qualitative credit analysis following Moody's methodology.\n\n`;
+  p+=`## Category Synthesis: ${cat.name}\n`;
+  p+=`Weight in composite rating: ${cat.weight}%\n\n`;
+  p+=`---\n\n`;
+  p+=`## Context\n`;
+  p+=`You have already completed the sub-factor analysis for the **${cat.name}** category. `;
+  p+=`Below are the LLM-generated outputs for each sub-factor. Your task is to synthesize these into a single category-level rating and opinion.\n\n`;
+  p+=`### Sub-factors included in this category:\n`;
+  cat.subs.forEach(sf=>{
+    p+=`- **${sf.name}** (${sf.weight}% weight within ${cat.name})\n`;
+  });
+  p+=`\n---\n\n`;
+  p+=`## Sub-factor Analysis Results\n\n`;
+  p+=`*[Paste the LLM outputs from each sub-factor analysis below. One block per sub-factor.]*\n\n`;
+  cat.subs.forEach(sf=>{
+    p+=`### ${sf.name} (${sf.weight}%)\n`;
+    p+=`[Paste the output of the "${sf.name}" sub-factor prompt here]\n\n`;
+  });
+  p+=`---\n\n`;
+  p+=`## Synthesis Instructions\n\n`;
+  p+=`1. Review each sub-factor rating and rationale above.\n`;
+  p+=`2. Compute the implied weighted average rating for the **${cat.name}** category, using the sub-factor weights above.\n`;
+  p+=`3. Assess whether any single sub-factor warrants a notching adjustment (positive or negative) to the mechanical average.\n`;
+  p+=`4. Assign a final category rating (Aaa, Aa, A, Baa, Ba, B, Caa, Ca, or C).\n`;
+  p+=`5. Write a synthesis opinion of 4–6 sentences integrating the key themes across sub-factors.\n`;
+  p+=`6. Identify the dominant driver (the sub-factor with the most influence on the final opinion).\n\n`;
+  p+=`---\n\n`;
+  p+=`## Expected Output Format\n\n`;
+  p+=`**Category: ${cat.name}**\n\n`;
+  p+=`| Sub-factor | Weight | Rating assigned | Key point |\n`;
+  p+=`|---|---|---|---|\n`;
+  cat.subs.forEach(sf=>{
+    p+=`| ${sf.name} | ${sf.weight}% | [rating] | [one-line summary] |\n`;
+  });
+  p+=`\n`;
+  p+=`- **Weighted average (mechanical):** [computed level]\n`;
+  p+=`- **Notching adjustment:** [None / +1 / -1] — [reason if adjusted]\n`;
+  p+=`- **Final category rating:** [Aaa / Aa / A / Baa / Ba / B / Caa / Ca / C]\n`;
+  p+=`- **Synthesis opinion:** [4–6 sentences integrating sub-factor themes]\n`;
+  p+=`- **Dominant driver:** [sub-factor name + brief explanation]\n`;
+  p+=`- **Category conviction level:** [High / Moderate / Low]\n`;
+  return p;
+}
+
+// ── Tab 5: Prompts ────────────────────────────────────────────
+function renderTab5(){
+  openPC={};
+  const sel=rubrics.filter(r=>r.sel);
+  let html='';
+
+  sel.forEach(cat=>{
+    // ── Synthesis prompt (header for the category) ──
+    const synthKey='synth_'+cat.name;
+    html+=`<div class="pc" style="border-color:rgba(59,130,246,0.35)">
+      <div class="pc-head" onclick="togglePC('${esc(synthKey)}')" style="background:rgba(59,130,246,0.08)">
+        <span class="pc-rubric" style="color:var(--accent)">${esc(cat.name)}</span>
+        <span class="pc-name" style="color:var(--accent)">⊕ Synthesis prompt</span>
+        <span class="pc-wt">${cat.weight}% of composite</span>
+        <span class="badge b-blue" style="font-size:9px">SYNTHESIS</span>
+        <span class="pc-chev" id="pcchev_${esc(synthKey)}">▼</span>
+      </div>
+      <div class="pc-body" id="pcbody_${esc(synthKey)}">
+        <pre class="prompt-pre">${escPre(buildSynthesisPrompt(cat))}</pre>
+        <div class="pc-actions">
+          <button class="btn btn-primary btn-sm" onclick="copySynth('${esc(cat.name)}',event)">📋 Copy synthesis prompt</button>
+        </div>
+      </div>
+    </div>`;
+
+    // ── Sub-factor prompts ──
+    cat.subs.forEach((sf,si)=>{
+      const key=cat.name+'_'+si;
+      html+=`<div class="pc" style="margin-left:16px;border-color:var(--border)">
+        <div class="pc-head" onclick="togglePC('${esc(key)}')">
+          <span class="pc-rubric">${esc(cat.name)}</span>
+          <span class="pc-name">${esc(sf.name)}</span>
+          <span class="pc-wt">${sf.weight}% of ${cat.weight}%</span>
+          <span class="pc-chev" id="pcchev_${esc(key)}">▼</span>
+        </div>
+        <div class="pc-body" id="pcbody_${esc(key)}">
+          <pre class="prompt-pre">${escPre(buildPrompt(cat,sf))}</pre>
+          <div class="pc-actions">
+            <button class="btn btn-primary btn-sm" onclick="copyOne('${esc(cat.name)}','${si}',event)">📋 Copy</button>
+          </div>
+        </div>
+      </div>`;
+    });
+
+    html+=`<div style="height:8px"></div>`;
+  });
+
+  document.getElementById('promptCards').innerHTML=html||'<div class="empty">No active categories.</div>';
+}
+function togglePC(key){
+  openPC[key]=!openPC[key];
+  document.getElementById('pcbody_'+key).classList.toggle('open',openPC[key]);
+  document.getElementById('pcchev_'+key).style.transform=openPC[key]?'rotate(180deg)':'';
+}
+function copyDirect(catName,e){
+  e.stopPropagation();
+  const cat=rubrics.find(r=>r.name===catName); if(!cat)return;
+  navigator.clipboard.writeText(buildDirectPrompt(cat)).then(()=>toast('📋 Copied: '+cat.name));
+}
+function copySynth(catName,e){
+  e.stopPropagation();
+  const cat=rubrics.find(r=>r.name===catName); if(!cat)return;
+  navigator.clipboard.writeText(buildSynthesisPrompt(cat)).then(()=>toast('📋 Synthesis prompt copied: '+cat.name));
+}
+function copyOne(catName,si,e){
+  e.stopPropagation();
+  const cat=rubrics.find(r=>r.name===catName); if(!cat)return;
+  const sf=cat.subs[si]; if(!sf)return;
+  navigator.clipboard.writeText(buildPrompt(cat,sf)).then(()=>toast('📋 Copied: '+sf.name));
+}
+function copyAll(){
+  const sel=rubrics.filter(r=>r.sel);
+  const parts=[]; let n=0;
+  sel.forEach(cat=>{
+    if(!cat.useSubs){
+      n++; parts.push('='.repeat(60)+'\nPROMPT '+n+' — '+cat.name.toUpperCase()+'\n'+'='.repeat(60)+'\n\n'+buildDirectPrompt(cat));
+    } else {
+      cat.subs.forEach(sf=>{ n++; parts.push('='.repeat(60)+'\nPROMPT '+n+' — '+cat.name.toUpperCase()+' / '+sf.name.toUpperCase()+'\n'+'='.repeat(60)+'\n\n'+buildPrompt(cat,sf)); });
+      n++; parts.push('='.repeat(60)+'\nSYNTHESIS — '+cat.name.toUpperCase()+'\n'+'='.repeat(60)+'\n\n'+buildSynthesisPrompt(cat));
+    }
+  });
+  navigator.clipboard.writeText(parts.join('\n\n')).then(()=>toast('📋 Copied all ('+n+' prompts)'));
+}
+function exportJSON(){
+  const sel=rubrics.filter(r=>r.sel);
+  const data={methodology:{categories:sel},exportedAt:new Date().toISOString()};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download='credit_methodology.json'; a.click(); URL.revokeObjectURL(url);
+  toast('⬇ JSON exported');
+}
+
+// ── Supabase config ───────────────────────────────────────────
+const SB_URL = 'https://zbysombwxrvlvfnesuaz.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpieXNvbWJ3eHJ2bHZmbmVzdWF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5NjcxNjIsImV4cCI6MjA5NTU0MzE2Mn0.Tc-dz6K0ezojEXNAtZVgB8I7zpuJ3OS2pn5omH1Z8Sc';
+const SB_HEADERS = { 'Content-Type': 'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY };
+
+async function sbFetch(path, opts={}){
+  const res = await fetch(SB_URL + '/rest/v1/' + path, { headers: SB_HEADERS, ...opts });
+  if(!res.ok){ const e=await res.text(); throw new Error(e); }
+  const txt = await res.text();
+  return txt ? JSON.parse(txt) : null;
+}
+
+// ── Library (Supabase) ────────────────────────────────────────
+async function loadLib(){
+  const el = document.getElementById('methList');
+  el.innerHTML = '<div class="empty">Loading…</div>';
+  try {
+    const rows = await sbFetch('methodologies?select=id,name,description,created_at&order=created_at.desc');
+    if(!rows || !rows.length){ el.innerHTML='<div class="empty">No saved methodologies yet.<br>Configure yours and hit Save.</div>'; return; }
+    el.innerHTML = rows.map(m=>`
+      <div class="meth-item">
+        <div style="flex:1">
+          <div class="meth-name">${esc(m.name)}</div>
+          <div class="meth-meta">${m.description?esc(m.description)+' · ':''} Saved ${new Date(m.created_at).toLocaleDateString('en-GB')}</div>
+        </div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-ghost btn-sm" onclick="askLoad('${esc(m.id)}','${esc(m.name)}')">Load</button>
+          <button class="btn btn-danger btn-sm" onclick="askDel('${esc(m.id)}','${esc(m.name)}')">Delete</button>
+        </div>
+      </div>`).join('');
+  } catch(e){ el.innerHTML='<div class="empty" style="color:var(--caa)">⚠ Could not reach database.<br><small>'+esc(e.message)+'</small></div>'; }
+}
+
+async function askLoad(id, name){
+  pendingLoadKey = id;
+  document.getElementById('mLoadMsg').textContent = 'Load "'+name+'"? Current workspace will be replaced.';
+  openM('mLoad');
+}
+async function doLoad(){
+  closeM('mLoad');
+  try {
+    const rows = await sbFetch('methodologies?id=eq.'+pendingLoadKey+'&select=data,name');
+    if(!rows||!rows.length){toast('❌ Could not load.');return;}
+    rubrics = deepClone(rows[0].data);
+    activeSFCat=null; activeCritCat=null; activeCritSF=null;
+    toast('✅ Loaded: '+rows[0].name);
+    goTab(2);
+  } catch(e){ toast('❌ '+e.message); }
+}
+
+function askDel(id, name){
+  pendingDelKey = id;
+  document.getElementById('mDelMsg').textContent = 'Delete "'+name+'" for everyone?';
+  openM('mDel');
+}
+async function doDel(){
+  closeM('mDel');
+  try {
+    await sbFetch('methodologies?id=eq.'+pendingDelKey, { method:'DELETE' });
+    toast('🗑 Deleted.');
+    loadLib();
+  } catch(e){ toast('❌ '+e.message); }
+}
+
+async function doSave(){
+  const name = document.getElementById('mSaveName').value.trim();
+  if(!name){ toast('Enter a name.'); return; }
+  const btn = document.getElementById('btnSaveOk');
+  btn.disabled=true; btn.textContent='Saving…';
+  try {
+    await sbFetch('methodologies', {
+      method: 'POST',
+      body: JSON.stringify({ name, description: document.getElementById('mSaveDesc').value.trim(), data: rubrics })
+    });
+    closeM('mSave');
+    toast('✅ Saved & shared: '+name);
+    loadLib();
+  } catch(e){ toast('❌ '+e.message); }
+  finally { btn.disabled=false; btn.textContent='Save'; }
+}
+
+// Init
+renderTab2();
+loadLib();
+</script>
+</body>
+</html>
